@@ -1,89 +1,156 @@
 ﻿// Aplicación de Gestión de Tareas con Prioridades Dinámicas
-using System;
-using System.Collections.Generic;
 
-// Clase para representar una Tarea
-public class Tarea
+ using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Tarea
 {
     public int Id { get; set; }
     public string Descripcion { get; set; }
     public bool Completada { get; set; }
-    public DateTime FechaCreacion { get; private set; }
+    public DateTime FechaCreacion { get; set; }
+    public string Prioridad { get; set; }
 
-    public Tarea(int id, string descripcion)
+    public Tarea(int id, string descripcion, DateTime fechaCreacion)
     {
         Id = id;
         Descripcion = descripcion;
         Completada = false;
-        FechaCreacion = DateTime.Now;
+        FechaCreacion = fechaCreacion;
+        Prioridad = CalcularPrioridad();
     }
 
     public string CalcularPrioridad()
     {
-        if (Completada) return "Baja";
-        TimeSpan diferencia = DateTime.Now - FechaCreacion;
-        if (diferencia.TotalDays > 3) return "Alta";
-        if (diferencia.TotalDays >= 1) return "Media";
+        var diasPendientes = (DateTime.Now - FechaCreacion).TotalDays;
+
+        if (Completada)
+            return "Baja";
+
+        if (diasPendientes > 3)
+            return "Alta";
+        if (diasPendientes >= 1)
+            return "Media";
+
         return "Baja";
     }
 
-    public override string ToString()
+    public void MarcarComoCompletada()
     {
-        return $"ID: {Id}, Descripción: {Descripcion}, Estado: {(Completada ? "Completada" : "Pendiente")}, Prioridad: {CalcularPrioridad()}, Creada: {FechaCreacion}";
+        Completada = true;
+        Prioridad = CalcularPrioridad();
     }
 }
 
-// Clase para gestionar las tareas
-public class GestorTareas
+class Program
 {
-    private List<Tarea> tareas = new List<Tarea>();
-    private int contadorId = 1;
+    static List<Tarea> tareas = new List<Tarea>();
+    static int idContador = 1;
 
-    public void AgregarTarea(string descripcion)
+    static void Main(string[] args)
     {
-        var tarea = new Tarea(contadorId++, descripcion);
-        tareas.Add(tarea);
-        Console.WriteLine("Tarea agregada exitosamente.");
-    }
-
-    public void ListarTareas()
-    {
-        if (tareas.Count == 0)
+        while (true)
         {
-            Console.WriteLine("No hay tareas registradas.");
-            return;
-        }
+            Console.Clear();
+            MostrarMenu();
+            string opcion = Console.ReadLine();
 
-        Console.WriteLine("Tareas por Prioridad:");
-        foreach (var prioridad in new[] { "Alta", "Media", "Baja" })
-        {
-            foreach (var tarea in tareas)
+            switch (opcion)
             {
-                if (tarea.CalcularPrioridad() == prioridad)
-                {
-                    Console.WriteLine(tarea);
-                }
+                case "1":
+                    AgregarTarea();
+                    break;
+                case "2":
+                    ListarTareasPorPrioridad();
+                    break;
+                case "3":
+                    MarcarTareaComoCompletada();
+                    break;
+                case "4":
+                    EliminarTarea();
+                    break;
+                case "5":
+                    Console.WriteLine("Saliendo...");
+                    return;
+                default:
+                    Console.WriteLine("Opción no válida. Intenta nuevamente.");
+                    break;
             }
         }
     }
 
-    public void MarcarComoCompletada(int id)
+    static void MostrarMenu()
     {
-        var tarea = tareas.Find(t => t.Id == id);
+        Console.WriteLine("=== Gestor de Tareas ===");
+        Console.WriteLine("1. Agregar tarea");
+        Console.WriteLine("2. Listar tareas por prioridad");
+        Console.WriteLine("3. Marcar tarea como completada");
+        Console.WriteLine("4. Eliminar tarea");
+        Console.WriteLine("5. Salir");
+        Console.Write("Elige una opción: ");
+    }
+
+    static void AgregarTarea()
+    {
+        Console.Write("Ingrese la descripción de la tarea: ");
+        string descripcion = Console.ReadLine();
+
+        Console.Write("Ingrese la fecha y hora de la tarea (dd/MM/yyyy HH:mm) o presione Enter para usar la actual: ");
+        string fechaInput = Console.ReadLine();
+        DateTime fechaCreacion;
+
+        if (string.IsNullOrWhiteSpace(fechaInput) || !DateTime.TryParseExact(fechaInput, "dd/MM/yyyy HH:mm", null, System.Globalization.DateTimeStyles.None, out fechaCreacion))
+        {
+            fechaCreacion = DateTime.Now;
+            Console.WriteLine("Se usará la fecha y hora actual.");
+        }
+
+        Tarea nuevaTarea = new Tarea(idContador++, descripcion, fechaCreacion);
+        tareas.Add(nuevaTarea);
+        Console.WriteLine("Tarea agregada exitosamente.");
+        Console.ReadLine();
+    }
+
+    static void ListarTareasPorPrioridad()
+    {
+        var tareasAgrupadas = tareas.GroupBy(t => t.Prioridad).OrderBy(g => g.Key);
+        
+        foreach (var grupo in tareasAgrupadas)
+        {
+            Console.WriteLine($"\nPrioridad: {grupo.Key}");
+            foreach (var tarea in grupo)
+            {
+                Console.WriteLine($"ID: {tarea.Id}, Descripción: {tarea.Descripcion}, Estado: {(tarea.Completada ? "Completada" : "Pendiente")}, Fecha de Creación: {tarea.FechaCreacion}");
+            }
+        }
+        Console.ReadLine();
+    }
+
+    static void MarcarTareaComoCompletada()
+    {
+        Console.Write("Ingrese el ID de la tarea a marcar como completada: ");
+        int id = int.Parse(Console.ReadLine());
+
+        var tarea = tareas.FirstOrDefault(t => t.Id == id);
         if (tarea != null)
         {
-            tarea.Completada = true;
+            tarea.MarcarComoCompletada();
             Console.WriteLine("Tarea marcada como completada.");
         }
         else
         {
             Console.WriteLine("Tarea no encontrada.");
         }
+        Console.ReadLine();
     }
 
-    public void EliminarTarea(int id)
+    static void EliminarTarea()
     {
-        var tarea = tareas.Find(t => t.Id == id);
+        Console.Write("Ingrese el ID de la tarea a eliminar: ");
+        int id = int.Parse(Console.ReadLine());
+
+        var tarea = tareas.FirstOrDefault(t => t.Id == id);
         if (tarea != null)
         {
             tareas.Remove(tarea);
@@ -93,67 +160,7 @@ public class GestorTareas
         {
             Console.WriteLine("Tarea no encontrada.");
         }
+        Console.ReadLine();
     }
 }
-
-// Programa Principal
-class Program
-{
-    static void Main()
-    {
-        var gestor = new GestorTareas();
-        bool continuar = true;
-
-        while (continuar)
-        {
-            Console.WriteLine("\nMenú de Gestión de Tareas:");
-            Console.WriteLine("1. Agregar Tarea");
-            Console.WriteLine("2. Listar Tareas por Prioridad");
-            Console.WriteLine("3. Marcar Tarea como Completada");
-            Console.WriteLine("4. Eliminar Tarea");
-            Console.WriteLine("5. Salir");
-            Console.Write("Seleccione una opción: ");
-
-            if (int.TryParse(Console.ReadLine(), out int opcion))
-            {
-                switch (opcion)
-                {
-                    case 1:
-                        Console.Write("Ingrese la descripción de la tarea: ");
-                        string descripcion = Console.ReadLine();
-                        gestor.AgregarTarea(descripcion);
-                        break;
-                    case 2:
-                        gestor.ListarTareas();
-                        break;
-                    case 3:
-                        Console.Write("Ingrese el ID de la tarea a completar: ");
-                        if (int.TryParse(Console.ReadLine(), out int idCompletar))
-                        {
-                            gestor.MarcarComoCompletada(idCompletar);
-                        }
-                        break;
-                    case 4:
-                        Console.Write("Ingrese el ID de la tarea a eliminar: ");
-                        if (int.TryParse(Console.ReadLine(), out int idEliminar))
-                        {
-                            gestor.EliminarTarea(idEliminar);
-                        }
-                        break;
-                    case 5:
-                        continuar = false;
-                        Console.WriteLine("Saliendo del programa...");
-                        break;
-                    default:
-                        Console.WriteLine("Opción inválida.");
-                        break;
-                }
-            }
-            else
-            {
-                Console.WriteLine("Entrada no válida. Intente de nuevo.");
-            }
-        }
-    }
-} // Fin del Programa
 
