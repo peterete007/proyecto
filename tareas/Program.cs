@@ -1,6 +1,4 @@
-﻿// Aplicación de Gestión de Tareas con Prioridades Dinámicas
-
- using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -93,17 +91,23 @@ class Program
 
     static void AgregarTarea()
     {
-        Console.Write("Ingrese la descripción de la tarea: ");
-        string descripcion = Console.ReadLine();
-
-        Console.Write("Ingrese la fecha y hora de la tarea (dd/MM/yyyy HH:mm) o presione Enter para usar la actual: ");
-        string fechaInput = Console.ReadLine();
-        DateTime fechaCreacion;
-
-        if (string.IsNullOrWhiteSpace(fechaInput) || !DateTime.TryParseExact(fechaInput, "dd/MM/yyyy HH:mm", null, System.Globalization.DateTimeStyles.None, out fechaCreacion))
+        string descripcion;
+        while (true)
         {
-            fechaCreacion = DateTime.Now;
-            Console.WriteLine("Se usará la fecha y hora actual.");
+            Console.Write("Ingrese la descripción de la tarea: ");
+            descripcion = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(descripcion)) break;
+            Console.WriteLine("Descripción no válida. Inténtalo de nuevo.");
+        }
+
+        DateTime fechaCreacion;
+        while (true)
+        {
+            Console.Write("Ingrese la fecha y hora de la tarea (dd/MM/yyyy HH:mm): ");
+            string fechaInput = Console.ReadLine();
+            if (DateTime.TryParseExact(fechaInput, "dd/MM/yyyy HH:mm", null, System.Globalization.DateTimeStyles.None, out fechaCreacion))
+                break;
+            Console.WriteLine("Fecha no válida. Inténtalo de nuevo.");
         }
 
         Tarea nuevaTarea = new Tarea(idContador++, descripcion, fechaCreacion);
@@ -115,7 +119,6 @@ class Program
     static void ListarTareasPorPrioridad()
     {
         var tareasAgrupadas = tareas.GroupBy(t => t.Prioridad).OrderBy(g => g.Key);
-        
         foreach (var grupo in tareasAgrupadas)
         {
             Console.WriteLine($"\nPrioridad: {grupo.Key}");
@@ -129,8 +132,13 @@ class Program
 
     static void MarcarTareaComoCompletada()
     {
-        Console.Write("Ingrese el ID de la tarea a marcar como completada: ");
-        int id = int.Parse(Console.ReadLine());
+        int id;
+        while (true)
+        {
+            Console.Write("Ingrese el ID de la tarea a marcar como completada: ");
+            if (int.TryParse(Console.ReadLine(), out id)) break;
+            Console.WriteLine("ID no válido. Inténtalo de nuevo.");
+        }
 
         var tarea = tareas.FirstOrDefault(t => t.Id == id);
         if (tarea != null)
@@ -147,8 +155,13 @@ class Program
 
     static void EliminarTarea()
     {
-        Console.Write("Ingrese el ID de la tarea a eliminar: ");
-        int id = int.Parse(Console.ReadLine());
+        int id;
+        while (true)
+        {
+            Console.Write("Ingrese el ID de la tarea a eliminar: ");
+            if (int.TryParse(Console.ReadLine(), out id)) break;
+            Console.WriteLine("ID no válido. Inténtalo de nuevo.");
+        }
 
         var tarea = tareas.FirstOrDefault(t => t.Id == id);
         if (tarea != null)
@@ -163,4 +176,5 @@ class Program
         Console.ReadLine();
     }
 }
+
 
